@@ -1,68 +1,103 @@
 import { useEffect, useRef, useState } from "react";
+import Icon from "./Icon";
 
-function RowActions() {
+/**
+ * Tombol ⋯ + dropdown aksi per baris tabel.
+ * Figma: Prototype 1 → Checking history → "Action menu" (120×88, 2 item @44px)
+ *
+ * Pemakaian:
+ *   <RowActions items={[
+ *     { label: "View details",  onClick: () => ... },
+ *     { label: "Download file", onClick: () => ... },
+ *   ]} />
+ *
+ * Pilihan sejenis bisa dijadikan satu baris (mis. format unduhan):
+ *   { group: "Download as", options: [{ label: "PDF", onClick }, { label: "Excel", onClick }] }
+ */
+export default function RowActions({ items = [] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const triggerRef = useRef(null);
 
-  // tutup saat klik di luar
+  // Tutup saat klik di luar menu atau tekan Escape
   useEffect(() => {
-    const onDoc = (e) => {
+    if (!open) return;
+    const onClickOutside = (e) => {
       if (!ref.current?.contains(e.target)) setOpen(false);
     };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
+    const onEsc = (e) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [open]);
 
   return (
     <div ref={ref} className="relative inline-block text-left">
       <button
+        ref={triggerRef}
         type="button"
+        aria-label="Row actions"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="p-2 rounded-md hover:bg-gray-100"
+        className="rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none focus-visible:shadow-focus-gray"
       >
-        {/* ikon 3 titik */}
-        <svg
-          viewBox="0 0 20 20"
-          className="h-5 w-5 text-gray-600"
-          fill="currentColor"
-        >
-          <circle cx="4" cy="10" r="1.5" />
-          <circle cx="10" cy="10" r="1.5" />
-          <circle cx="16" cy="10" r="1.5" />
-        </svg>
+        <Icon name="dots" className="size-5" />
       </button>
 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-40 rounded-md border border-gray-200 bg-white shadow-lg z-10"
+          style={{ minWidth: 168 }}
+          className="absolute -right-3 top-full z-20 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-lg"
         >
-          <button
-            className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm hover:bg-gray-50"
-            role="menuitem"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="size-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
-              />
-            </svg>
-            Download
-          </button>
+          {items.map((item, i) => {
+            const pick = (fn) => {
+              setOpen(false);
+              triggerRef.current?.focus(); // fokus kembali ke tombol ⋯ (mis. setelah modal ditutup)
+              fn?.();
+            };
+            if (item.group) {
+              return (
+                <div key={item.group} className={`px-3.5 py-2.5 ${i > 0 ? "border-t border-gray-100" : ""}`}>
+                  <p className="mb-1.5 whitespace-nowrap text-xs text-gray-500">{item.group}</p>
+                  <div className="flex gap-1.5">
+                    {item.options.map((o) => (
+                      <button
+                        key={o.label}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => pick(o.onClick)}
+                        className="h-8 flex-1 rounded-md border border-gray-200 px-3 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <button
+                key={item.label}
+                type="button"
+                role="menuitem"
+                onClick={() => pick(item.onClick)}
+                className={`flex h-11 w-full items-center whitespace-nowrap px-3.5 text-left text-sm focus:outline-none ${
+                  item.danger
+                    ? "text-error-600 hover:bg-error-50 focus:bg-error-50"
+                    : "text-gray-900 hover:bg-gray-50 focus:bg-gray-50"
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-
-export default RowActions;

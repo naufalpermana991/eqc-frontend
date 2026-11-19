@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
+@config "../tailwind.config.js";
 
 @theme{
     --font-display: "Roboto", sans-serif;
@@ -9,7 +10,19 @@ body{
     @apply bg-gray-100;
 }
 
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
 
-
-
-
+/* Toast masuk dari atas (components/ToastProvider.jsx) */
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
